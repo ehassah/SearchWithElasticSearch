@@ -1,0 +1,76 @@
+﻿
+@{
+    ViewBag.Title = "Index";
+}
+    @using (Html.BeginForm())
+    {
+      <form ng-submit="search()">
+          <div class="input-group">
+          Search here: 
+            @Html.TextBox("searchCourse1", null, new { id = "txtSearchCourse1" })
+          </div><!-- /input-group -->
+      </form>
+
+    }
+    <link href="~/Scripts/jquery-ui.min.css" rel="stylesheet" />
+    <script src="~/Scripts/elasticsearch.js"></script>
+    <script src="~/Scripts/jquery-ui.js"></script>
+    @section scripts{
+        <script type="text/javascript">
+            $(function () {
+
+                //new code
+                var storage1;
+
+                var projects = [];
+                $("#txtSearchCourse1").autocomplete({
+                    minLength: 3,
+                    source: function (request, response) {
+                        $.ajax({
+                            url: "http://localhost:9200/_search",
+                            contentType: "application/json; charset=utf-8",
+                            dataType: "json",
+                            data: {
+                                q: 'firstname:' + request.term + '*',
+                            },
+                            success: function (data) {
+                                currentCategory = "";
+                                projects = [];
+                                data.hits.hits.forEach(function (hit) {
+                                    projects.push({ firstname: hit._source.firstname, gender: hit._source.gender });
+                                });
+
+                                response(projects);
+
+                            },
+                            error: function (data, type) {
+                                console.log("Here is the error");
+                                console.log(type);
+                            }
+                        });
+                    },
+                    focus: function (event, ui) {
+                        $("#txtSearchCourse1").val(ui.item.firstname);
+                        return false;
+                    },
+                    select: function (event, ui) {
+                        //what needs to be done when someone selects any item
+                        return false;
+                    }
+                })
+                    .data("ui-autocomplete")._renderItem = function (ul, item) {
+                        $.each(item, function (index, i) {
+                            if (item.gender !== currentCategory) {
+                                ul.append("<span class='ui-autocomplete-category'>" + item.gender + "</span>");
+                                currentCategory = item.gender;
+                            }
+                        });
+                        return $("<li>")
+                            .append("<a>" + item.firstname)
+                            .appendTo(ul);
+
+                    };
+            });
+
+        </script>
+    }
